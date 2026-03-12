@@ -1,0 +1,118 @@
+{
+  "apiVersion": "v1",
+  "spec": {
+    "kind": "Workflow",
+    "spec": {
+      "type": "sequential",
+      "steps": [
+        {
+          "kind": "Project",
+          "spec": {
+            "name": "todo-fullstack",
+            "description": "Fullstack Todo application - PostgreSQL, Express API, React frontend",
+            "region": "europe-west",
+            "color": "#6366f1"
+          }
+        },
+        {
+          "kind": "Addon",
+          "spec": {
+            "name": "todo-db",
+            "description": "PostgreSQL database for Todo app",
+            "type": "postgresql",
+            "version": "16",
+            "billing": {
+              "deploymentPlan": "nf-compute-20"
+            },
+            "tlsEnabled": true,
+            "externalAccessEnabled": false,
+            "databases": [
+              {
+                "name": "tododb",
+                "username": "todo_user",
+                "extensions": []
+              }
+            ]
+          }
+        },
+        {
+          "kind": "DeploymentService",
+          "spec": {
+            "name": "todo-api",
+            "description": "Todo REST API (Node.js / Express)",
+            "billing": {
+              "deploymentPlan": "nf-compute-20"
+            },
+            "deployment": {
+              "instances": 1
+            },
+            "ports": [
+              {
+                "name": "http",
+                "internalPort": 4000,
+                "protocol": "HTTP",
+                "public": false
+              }
+            ],
+            "runtimeEnvironment": {
+              "PORT": "4000",
+              "NODE_ENV": "production"
+            },
+            "runtimeSecretRefs": [
+              {
+                "name": "DATABASE_URL",
+                "secretRef": {
+                  "addonName": "todo-db",
+                  "key": "CONNECTION_STRING"
+                }
+              }
+            ],
+            "buildSettings": {
+              "dockerfile": {
+                "buildEngine": "kaniko",
+                "dockerFilePath": "/api/Dockerfile",
+                "dockerWorkDir": "/"
+              }
+            },
+            "vcsData": {
+              "projectType": "github",
+              "projectUrl": "https://github.com/dataGriff/northflank.fullstack"
+            }
+          }
+        },
+        {
+          "kind": "DeploymentService",
+          "spec": {
+            "name": "todo-frontend",
+            "description": "Todo React frontend (Nginx)",
+            "billing": {
+              "deploymentPlan": "nf-compute-20"
+            },
+            "deployment": {
+              "instances": 1
+            },
+            "ports": [
+              {
+                "name": "http",
+                "internalPort": 80,
+                "protocol": "HTTP",
+                "public": true
+              }
+            ],
+            "buildSettings": {
+              "dockerfile": {
+                "buildEngine": "kaniko",
+                "dockerFilePath": "/frontend/Dockerfile",
+                "dockerWorkDir": "/"
+              }
+            },
+            "vcsData": {
+              "projectType": "github",
+              "projectUrl": "https://github.com/dataGriff/northflank.fullstack"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
