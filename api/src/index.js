@@ -1,13 +1,23 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 const { pool, initDb } = require("./db");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests, please try again later." },
+});
+
 app.use(cors());
 app.use(express.json());
+app.use("/api/", apiLimiter);
 
 // Health check
 app.get("/health", (_req, res) => {
