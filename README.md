@@ -83,7 +83,12 @@ cd frontend && npm install && npm test
 
 1. Go to [app.northflank.com](https://app.northflank.com) → **Templates** → **New template**
 2. Paste the contents of [`northflank.json`](./northflank.json)
-3. Click **Run** – Northflank will create the project, provision the PostgreSQL add-on, and deploy both services automatically.
+3. Click **Run** – Northflank will sequentially:
+   - Create the `todo-fullstack` project
+   - Provision the PostgreSQL 16 add-on (`todo-db`)
+   - Create a secret group that wires the add-on `CONNECTION_STRING` to `DATABASE_URL`
+   - Build and deploy the `todo-api` service from `api/Dockerfile`
+   - Build and deploy the `todo-frontend` service from `frontend/Dockerfile` (public port 80)
 
 ### Option 2 – Manual setup via the Northflank UI
 
