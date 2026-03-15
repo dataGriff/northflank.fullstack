@@ -54,7 +54,7 @@
                 "addonId": "${refs.todo-db.id}",
                 "keys": [
                   {
-                    "keyName": "URI",
+                    "keyName": "CONNECTION_STRING",
                     "aliases": [
                       "DATABASE_URL"
                     ]
