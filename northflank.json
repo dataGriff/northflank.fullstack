@@ -7,6 +7,7 @@
       "steps": [
         {
           "kind": "Project",
+          "ref": "todo-fullstack",
           "spec": {
             "name": "todo-fullstack",
             "description": "Fullstack Todo application - PostgreSQL, Express API, React frontend",
