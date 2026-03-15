@@ -1,0 +1,95 @@
+name: Validate Northflank JSON
+
+on:
+  push:
+    paths:
+      - 'northflank.json'
+  pull_request:
+    paths:
+      - 'northflank.json'
+
+jobs:
+  validate:
+    name: Validate and Lint northflank.json
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate JSON syntax
+        run: python3 -m json.tool northflank.json > /dev/null && echo "northflank.json is valid JSON"
+
+      - name: Lint northflank.json structure
+        run: |
+          echo "Checking northflank.json structure..."
+
+          # Verify apiVersion
+          API_VERSION=$(jq -r '.apiVersion' northflank.json)
+          if [ "$API_VERSION" != "v1" ]; then
+            echo "ERROR: apiVersion must be 'v1', got '$API_VERSION'"
+            exit 1
+          fi
+          echo "✓ apiVersion: $API_VERSION"
+
+          # Verify top-level spec kind is Workflow
+          KIND=$(jq -r '.spec.kind' northflank.json)
+          if [ "$KIND" != "Workflow" ]; then
+            echo "ERROR: spec.kind must be 'Workflow', got '$KIND'"
+            exit 1
+          fi
+          echo "✓ spec.kind: $KIND"
+
+          # Verify steps exist
+          STEPS_COUNT=$(jq '.spec.spec.steps | length' northflank.json)
+          if [ "$STEPS_COUNT" -lt 1 ]; then
+            echo "ERROR: spec.spec.steps must have at least one step"
+            exit 1
+          fi
+          echo "✓ steps count: $STEPS_COUNT"
+
+          # Validate each step has a 'kind' and 'spec'
+          for i in $(seq 0 $(($STEPS_COUNT - 1))); do
+            STEP_KIND=$(jq -r ".spec.spec.steps[$i].kind" northflank.json)
+            STEP_NAME=$(jq -r ".spec.spec.steps[$i].spec.name" northflank.json)
+            if [ "$STEP_KIND" = "null" ]; then
+              echo "ERROR: step[$i] is missing 'kind'"
+              exit 1
+            fi
+            echo "✓ step[$i] kind: $STEP_KIND, name: $STEP_NAME"
+
+            # Validate Addon steps have required billing fields
+            if [ "$STEP_KIND" = "Addon" ]; then
+              STORAGE=$(jq -r ".spec.spec.steps[$i].spec.billing.storage" northflank.json)
+              REPLICAS=$(jq -r ".spec.spec.steps[$i].spec.billing.replicas" northflank.json)
+              PLAN=$(jq -r ".spec.spec.steps[$i].spec.billing.deploymentPlan" northflank.json)
+
+              if [ "$STORAGE" = "null" ]; then
+                echo "ERROR: step[$i] (Addon '$STEP_NAME') is missing billing.storage"
+                exit 1
+              fi
+              if [ "$REPLICAS" = "null" ]; then
+                echo "ERROR: step[$i] (Addon '$STEP_NAME') is missing billing.replicas"
+                exit 1
+              fi
+              if [ "$PLAN" = "null" ]; then
+                echo "ERROR: step[$i] (Addon '$STEP_NAME') is missing billing.deploymentPlan"
+                exit 1
+              fi
+              echo "  ✓ Addon billing - plan: $PLAN, storage: $STORAGE, replicas: $REPLICAS"
+            fi
+
+            # Validate DeploymentService steps have required billing fields
+            if [ "$STEP_KIND" = "DeploymentService" ]; then
+              PLAN=$(jq -r ".spec.spec.steps[$i].spec.billing.deploymentPlan" northflank.json)
+              if [ "$PLAN" = "null" ]; then
+                echo "ERROR: step[$i] (DeploymentService '$STEP_NAME') is missing billing.deploymentPlan"
+                exit 1
+              fi
+              echo "  ✓ DeploymentService billing - plan: $PLAN"
+            fi
+          done
+
+          echo ""
+          echo "✓ northflank.json validation passed"
