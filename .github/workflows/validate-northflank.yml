@@ -27,8 +27,8 @@ jobs:
 
           # Verify apiVersion
           API_VERSION=$(jq -r '.apiVersion' northflank.json)
-          if [ "$API_VERSION" != "v1" ]; then
-            echo "ERROR: apiVersion must be 'v1', got '$API_VERSION'"
+          if [ "$API_VERSION" != "v1.2" ]; then
+            echo "ERROR: apiVersion must be 'v1.2', got '$API_VERSION'"
             exit 1
           fi
           echo "✓ apiVersion: $API_VERSION"
@@ -61,6 +61,13 @@ jobs:
 
             # Validate Addon steps have required billing fields
             if [ "$STEP_KIND" = "Addon" ]; then
+              PROJECT_ID=$(jq -r ".spec.spec.steps[$i].spec.projectId" northflank.json)
+              if [ "$PROJECT_ID" = "null" ] || [ -z "$PROJECT_ID" ]; then
+                echo "ERROR: step[$i] (Addon '$STEP_NAME') is missing projectId"
+                exit 1
+              fi
+              echo "  ✓ Addon projectId: $PROJECT_ID"
+
               STORAGE=$(jq -r ".spec.spec.steps[$i].spec.billing.storage" northflank.json)
               REPLICAS=$(jq -r ".spec.spec.steps[$i].spec.billing.replicas" northflank.json)
               PLAN=$(jq -r ".spec.spec.steps[$i].spec.billing.deploymentPlan" northflank.json)
@@ -82,6 +89,13 @@ jobs:
 
             # Validate DeploymentService steps have required billing fields
             if [ "$STEP_KIND" = "DeploymentService" ]; then
+              PROJECT_ID=$(jq -r ".spec.spec.steps[$i].spec.projectId" northflank.json)
+              if [ "$PROJECT_ID" = "null" ] || [ -z "$PROJECT_ID" ]; then
+                echo "ERROR: step[$i] (DeploymentService '$STEP_NAME') is missing projectId"
+                exit 1
+              fi
+              echo "  ✓ DeploymentService projectId: $PROJECT_ID"
+
               PLAN=$(jq -r ".spec.spec.steps[$i].spec.billing.deploymentPlan" northflank.json)
               if [ "$PLAN" = "null" ]; then
                 echo "ERROR: step[$i] (DeploymentService '$STEP_NAME') is missing billing.deploymentPlan"
