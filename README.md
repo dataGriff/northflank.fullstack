@@ -86,18 +86,18 @@ cd frontend && npm install && npm test
 3. Click **Run** – Northflank will sequentially:
    - Create the `todo-fullstack` project
    - Provision the PostgreSQL 16 add-on (`todo-db`)
-   - Create a secret group that wires the add-on `CONNECTION_STRING` to `DATABASE_URL`
+   - Create a secret group that wires the add-on `URI` to `DATABASE_URL`
    - Build and deploy the `todo-api` service from `api/Dockerfile`
    - Build and deploy the `todo-frontend` service from `frontend/Dockerfile` (public port 80)
 
 ### Option 2 – Manual setup via the Northflank UI
 
 1. **Create a project** in Northflank.
-2. **Add a PostgreSQL add-on** (v16). Note the `CONNECTION_STRING` secret it generates.
+2. **Add a PostgreSQL add-on** (v16). Note the `URI` secret it generates.
 3. **Create a deployment service** for the API:
    - Build from this GitHub repo
    - Dockerfile path: `api/Dockerfile`
-   - Set `DATABASE_URL` to the add-on `CONNECTION_STRING`
+   - Set `DATABASE_URL` to the add-on `URI`
    - Set `PORT=4000`
 4. **Create a deployment service** for the frontend:
    - Build from this GitHub repo
