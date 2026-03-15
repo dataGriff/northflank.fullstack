@@ -1,5 +1,9 @@
 {
   "apiVersion": "v1.2",
+  "arguments": {
+    "GIT_REPO": "https://github.com/dataGriff/northflank.fullstack",
+    "GIT_BRANCH": "main"
+  },
   "spec": {
     "kind": "Workflow",
     "spec": {
@@ -17,6 +21,7 @@
         },
         {
           "kind": "Addon",
+          "ref": "todo-db",
           "spec": {
             "projectId": "${refs.todo-fullstack.id}",
             "name": "todo-db",
@@ -33,13 +38,58 @@
           }
         },
         {
-          "kind": "DeploymentService",
+          "kind": "SecretGroup",
+          "ref": "api-secrets",
+          "spec": {
+            "projectId": "${refs.todo-fullstack.id}",
+            "name": "api-secrets",
+            "secretType": "environment-arguments",
+            "priority": 10,
+            "secrets": {
+              "variables": {},
+              "files": {}
+            },
+            "addonDependencies": [
+              {
+                "addonId": "${refs.todo-db.id}",
+                "keys": [
+                  {
+                    "keyName": "CONNECTION_STRING",
+                    "aliases": [
+                      "DATABASE_URL"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "restrictions": {
+              "restricted": false,
+              "nfObjects": [],
+              "tags": []
+            }
+          }
+        },
+        {
+          "kind": "CombinedService",
+          "ref": "todo-api",
           "spec": {
             "projectId": "${refs.todo-fullstack.id}",
             "name": "todo-api",
             "description": "Todo REST API (Node.js / Express)",
             "billing": {
               "deploymentPlan": "nf-compute-20"
+            },
+            "vcsData": {
+              "projectType": "github",
+              "projectUrl": "${args.GIT_REPO}",
+              "projectBranch": "${args.GIT_BRANCH}"
+            },
+            "buildSettings": {
+              "dockerfile": {
+                "buildEngine": "kaniko",
+                "dockerFilePath": "/api/Dockerfile",
+                "dockerWorkDir": "/api"
+              }
             },
             "deployment": {
               "instances": 1
@@ -60,17 +110,38 @@
             "runtimeEnvironment": {
               "PORT": "4000",
               "NODE_ENV": "production"
+            },
+            "runtimeFiles": {},
+            "buildArguments": {},
+            "buildFiles": {},
+            "buildConfiguration": {
+              "pathIgnoreRules": [],
+              "isAllowList": false,
+              "ciIgnoreFlagsEnabled": false
             }
           }
         },
         {
-          "kind": "DeploymentService",
+          "kind": "CombinedService",
+          "ref": "todo-frontend",
           "spec": {
             "projectId": "${refs.todo-fullstack.id}",
             "name": "todo-frontend",
             "description": "Todo React frontend (Nginx)",
             "billing": {
               "deploymentPlan": "nf-compute-20"
+            },
+            "vcsData": {
+              "projectType": "github",
+              "projectUrl": "${args.GIT_REPO}",
+              "projectBranch": "${args.GIT_BRANCH}"
+            },
+            "buildSettings": {
+              "dockerfile": {
+                "buildEngine": "kaniko",
+                "dockerFilePath": "/frontend/Dockerfile",
+                "dockerWorkDir": "/frontend"
+              }
             },
             "deployment": {
               "instances": 1
@@ -88,7 +159,15 @@
                 }
               }
             ],
-            "runtimeEnvironment": {}
+            "runtimeEnvironment": {},
+            "runtimeFiles": {},
+            "buildArguments": {},
+            "buildFiles": {},
+            "buildConfiguration": {
+              "pathIgnoreRules": [],
+              "isAllowList": false,
+              "ciIgnoreFlagsEnabled": false
+            }
           }
         }
       ]
